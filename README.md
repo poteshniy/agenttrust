@@ -34,10 +34,12 @@ permissionless, x402-native scanner in the ecosystem.
 
 - [x] v0.1 - Live x402 server, scan + trust
 - [x] v0.2 - 40 rules, /v1/verify, /v1/report
-- [ ] v0.3 - On-chain tx verification, SQLite
-- [ ] v0.4 - ERC-8004 reputation registry on Base
-- [ ] v0.5 - OpenClaw + Agentic.Market listing
-- [ ] v1.0 - Web UI, GitHub Actions
+- [x] v0.3 - GitHub public repo
+- [ ] v0.4 - OpenClaw SKILL.md listing + Agentic.Market indexing
+- [ ] v0.5 - Twitter launch + first external users
+- [ ] v0.6 - On-chain tx verification, rate limiting, SQLite
+- [ ] v0.7 - ERC-8004 reputation registry on Base
+- [ ] v1.0 - Web UI, GitHub Actions, whitelist registry
 
 ## License
 
