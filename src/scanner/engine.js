@@ -24,7 +24,7 @@ const RULES = [
   { id: "S023", sev: 62,  cat: "obfuscation",   desc: "Character code obfuscation",         re: /(?:String\.fromCharCode|chr\()\s*\(\s*\d+(?:\s*,\s*\d+){5,}/i },
   { id: "S024", sev: 60,  cat: "obfuscation",   desc: "Dynamic code execution",             re: /eval\s*\(\s*(?:fetch|atob|Buffer|require|__)/i },
   { id: "S025", sev: 58,  cat: "obfuscation",   desc: "Process environment dump",           re: /process\.env(?!\.(PORT|NODE_ENV|PATH|HOME|PAYMENT))/i },
-  { id: "S026", sev: 55,  cat: "supply_chain",  desc: "Typosquatted package name",          re: /(?:requirre|improt|lодаsh|expres\b|mongooose|axois|reqest)\s*[=(]/i },
+  { id: "S026", sev: 55,  cat: "supply_chain",  desc: "Typosquatted package name",          re: /(?:requirre|improt|expres\b|mongooose|axois|reqest)\s*[=(]/i },
   { id: "S027", sev: 55,  cat: "supply_chain",  desc: "Unpinned remote script import",      re: /import\s+.+from\s+['"]https?:\/\/(?!esm\.sh|cdn\.skypack|unpkg\.com|deno\.land)[^'"]+['"]/i },
   { id: "S028", sev: 52,  cat: "supply_chain",  desc: "Postinstall script hook",            re: /["']postinstall["']\s*:\s*["'][^"']+["']/i },
   { id: "S029", sev: 50,  cat: "privacy",       desc: "PII collection pattern",             re: /(?:ssn|social.security|credit.card|cvv|passport.number)\s*[=:]/i },
@@ -51,12 +51,12 @@ export function scan(text) {
     }
   }
   findings.sort((a, b) => b.sev - a.sev);
-  const score   = Math.min(100, crits*30 + highs*15 + mediums*7 + lows*2);
   const crits   = findings.filter(f => f.sev >= 90).length;
   const highs   = findings.filter(f => f.sev >= 70 && f.sev < 90).length;
   const mediums = findings.filter(f => f.sev >= 40 && f.sev < 70).length;
   const lows    = findings.filter(f => f.sev < 40).length;
-  const level   = crits > 0 ? 'CRITICAL' : score >= 70 ? 'CRITICAL' : score >= 40 ? 'HIGH' : score >= 15 ? 'MEDIUM' : 'SAFE';
+  const score   = Math.min(100, crits*30 + highs*15 + mediums*7 + lows*2);
+  const level   = crits > 0 ? 'CRITICAL' : highs > 2 ? 'HIGH' : score >= 15 ? 'MEDIUM' : 'SAFE';
   const cats    = {};
   for (const f of findings) cats[f.cat] = (cats[f.cat] || 0) + 1;
   return { score: Math.round(score), level, findings, crits, highs, mediums, lows, categories: cats };
