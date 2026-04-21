@@ -8,7 +8,7 @@ const app = new Hono();
 const PORT = process.env.PORT || 3402;
 const WALLET = process.env.PAYMENT_ADDRESS || '0x0000000000000000000000000000000000000000';
 const FACILITATOR = 'https://x402.org/facilitator';
-const NETWORK = 'eip155:8453';
+const NETWORK = "base";
 
 const PRICE = {
   scan:   process.env.PRICE_SCAN   || '0.015',
@@ -40,7 +40,7 @@ function x402(c, price, description, endpoint) {
   c.header('WWW-Authenticate', `x402 scheme="exact" network="${NETWORK}" amount="${amountUnits}" payTo="${WALLET}" facilitator="${FACILITATOR}"`);
   return c.json({
     x402Version: 1,
-    accepts: [{ scheme: 'exact', network: NETWORK, amount: amountUnits, asset: USDC_BASE, payTo: WALLET }],
+    accepts: [{ scheme: "exact", network: NETWORK, maxAmountRequired: amountUnits, resource: `http://62.238.11.249:${PORT}${endpoint}`, description, mimeType: "application/json", asset: USDC_BASE, payTo: WALLET, maxTimeoutSeconds: 300, extra: { name: "USD Coin", version: "2" } }],
     error: 'Payment Required',
     description,
     resource: `http://62.238.11.249:${PORT}${endpoint}`,
