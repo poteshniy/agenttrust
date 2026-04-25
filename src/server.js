@@ -5,6 +5,7 @@ import { paymentMiddleware, x402ResourceServer } from '@x402/hono';
 import { ExactEvmScheme } from '@x402/evm/exact/server';
 import { HTTPFacilitatorClient } from '@x402/core/server';
 import { scan } from './scanner/engine.js';
+import { freeScan } from './free_scan.js';
 import { getReputation } from './reputation/oracle.js';
 
 const app = new Hono();
@@ -161,6 +162,17 @@ app.post('/v1/report', async (c) => {
     findings: result.findings.map(f => ({ id: f.id, severity: f.sev>=90?'CRITICAL':f.sev>=70?'HIGH':f.sev>=40?'MEDIUM':'LOW', category: f.cat, description: f.desc, line: f.line, evidence: f.match, recommendation: recs[f.cat]||'Review.' })),
     payment: { charged: '0.050', currency: 'USDC' }
   });
+});
+
+
+app.get('/v1/scan/free', (c) => c.json({ info: 'POST /v1/scan/free - free 5-rule scan, max 50 lines', upgrade: 'POST /v1/scan - full 40 rules, $0.015 USDC' }));
+
+app.post('/v1/scan/free', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const content = body.content || body.skill || '';
+  if (!content) return c.json({ error: 'content field required' }, 400);
+  const result = freeScan(content);
+  return c.json({ ok: true, free: true, ...result, scanned_at: new Date().toISOString() });
 });
 
 serve({ fetch: app.fetch, port: PORT });
