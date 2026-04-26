@@ -113,6 +113,12 @@ app.get('/', (c) => c.json({
   payment: { address: WALLET, network: 'base', currency: 'USDC' },
 }));
 
+app.get('/v1/scan', (c) => {
+  // Required for Bazaar crawling — must return 402
+  c.status(402);
+  return c.json({ error: 'Payment Required', endpoint: 'POST /v1/scan', price: '$0.015 USDC' });
+});
+
 app.post('/v1/scan', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const content = body.content || body.skill || '';
