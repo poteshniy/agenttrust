@@ -45,6 +45,12 @@ Live at: https://agenttrust.uk
 - [ ] v0.7 — ERC-8004 reputation registry on Base
 - [ ] v1.0 — GitHub Actions integration, whitelist registry, first paying users
 
+## Resources
+
+- Article: https://dev.to/poteshniy/i-built-a-security-scanner-for-ai-agent-skills-paid-per-scan-via-x402-no-api-keys-published-ai-4hi3
+- ClawHub: https://clawhub.ai/poteshniy/agenttrust-scanner
+- Live: https://agenttrust.uk
+
 ## License
 
 MIT
