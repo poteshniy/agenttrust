@@ -1,3 +1,4 @@
 node_modules/
 .env
 x402pay.js
+ecosystem.config.cjs
