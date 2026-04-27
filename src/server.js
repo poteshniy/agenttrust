@@ -58,11 +58,18 @@ const server = new x402ResourceServer(facilitatorClient)
 app.use(
   paymentMiddleware(
     {
+      'GET /v1/scan': {
+        accepts: [{ scheme: 'exact', price: '$0.015', network: NETWORK, payTo: WALLET }],
+        description: 'Scan any OpenClaw SKILL.md for malware, prompt injection, exfiltration, and 37 other threat patterns. Returns risk score 0-100 and detailed findings.',
+        mimeType: 'application/json',
+        extensions: { bazaar: { discoverable: true, category: 'security', tags: ['security', 'scanner', 'ai-agents', 'openclaw', 'x402'] } },
+      },
       'POST /v1/scan': {
         accepts: [{ scheme: 'exact', price: '$0.015', network: NETWORK, payTo: WALLET }],
         description: 'Scan any OpenClaw SKILL.md for malware, prompt injection, exfiltration, and 37 other threat patterns. Returns risk score 0-100 and detailed findings.',
         mimeType: 'application/json',
-        extensions: { bazaar: { discoverable: true } },
+        extensions: {
+          bazaar: { discoverable: true, category: 'security', tags: ['security', 'scanner', 'ai-agents', 'openclaw', 'x402'] } },
       },
       'GET /v1/trust': {
         accepts: [{ scheme: 'exact', price: '$0.010', network: NETWORK, payTo: WALLET }],
@@ -112,12 +119,6 @@ app.get('/', (c) => c.json({
   },
   payment: { address: WALLET, network: 'base', currency: 'USDC' },
 }));
-
-app.get('/v1/scan', (c) => {
-  // Required for Bazaar crawling — must return 402
-  c.status(402);
-  return c.json({ error: 'Payment Required', endpoint: 'POST /v1/scan', price: '$0.015 USDC' });
-});
 
 app.post('/v1/scan', async (c) => {
   const body = await c.req.json().catch(() => ({}));
