@@ -58,18 +58,26 @@ const server = new x402ResourceServer(facilitatorClient)
 app.use(
   paymentMiddleware(
     {
-      'GET /v1/scan': {
-        accepts: [{ scheme: 'exact', price: '$0.015', network: NETWORK, payTo: WALLET }],
-        description: 'Scan any OpenClaw SKILL.md for malware, prompt injection, exfiltration, and 37 other threat patterns. Returns risk score 0-100 and detailed findings.',
-        mimeType: 'application/json',
-        extensions: { bazaar: { discoverable: true, category: 'security', tags: ['security', 'scanner', 'ai-agents', 'openclaw', 'x402'] } },
-      },
       'POST /v1/scan': {
         accepts: [{ scheme: 'exact', price: '$0.015', network: NETWORK, payTo: WALLET }],
         description: 'Scan any OpenClaw SKILL.md for malware, prompt injection, exfiltration, and 37 other threat patterns. Returns risk score 0-100 and detailed findings.',
         mimeType: 'application/json',
         extensions: {
-          bazaar: { discoverable: true, category: 'security', tags: ['security', 'scanner', 'ai-agents', 'openclaw', 'x402'] } },
+          bazaar: { discoverable: true, category: 'security', tags: ['security', 'scanner', 'ai-agents', 'openclaw', 'x402'] }
+        },
+        outputSchema: {
+          input: {
+            method: 'POST',
+            bodyType: 'json',
+            body: { content: '# My Skill\n## Description\nSkill content here' },
+            schema: {
+              type: 'object',
+              properties: { content: { type: 'string', description: 'Full SKILL.md content to scan' } },
+              required: ['content']
+            }
+          },
+          output: { ok: true, score: 0, level: 'SAFE', findings: [], hash: 'sha256_of_content', charged: '0.015', currency: 'USDC' }
+        },
       },
       'GET /v1/trust': {
         accepts: [{ scheme: 'exact', price: '$0.010', network: NETWORK, payTo: WALLET }],
@@ -171,6 +179,23 @@ app.post('/v1/report', async (c) => {
   });
 });
 
+
+app.get('/v1/scan', (c) => {
+  const payload = {
+    x402Version: 2,
+    error: 'Payment required',
+    resource: { url: 'https://agenttrust.uk/v1/scan', description: 'Scan any OpenClaw SKILL.md for malware, prompt injection, exfiltration, and 37 other threat patterns. Returns risk score 0-100 and detailed findings.', mimeType: 'application/json' },
+    accepts: [{ scheme: 'exact', network: NETWORK, amount: '15000', asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', payTo: WALLET, maxTimeoutSeconds: 300, extra: { name: 'USD Coin', version: '2' } }],
+    extensions: { bazaar: { discoverable: true, category: 'security', tags: ['security','scanner','ai-agents','openclaw','x402'] } },
+    outputSchema: {
+      input: { method: 'POST', bodyType: 'json', body: { content: '# My Skill' }, schema: { type: 'object', properties: { content: { type: 'string', description: 'Full SKILL.md content to scan' } }, required: ['content'] } },
+      output: { ok: true, score: 0, level: 'SAFE', findings: [], hash: 'sha256_of_content' }
+    }
+  };
+  c.status(402);
+  c.header('payment-required', Buffer.from(JSON.stringify(payload)).toString('base64'));
+  return c.json(payload);
+});
 
 app.get('/v1/scan/free', (c) => c.json({ info: 'POST /v1/scan/free - free 5-rule scan, max 50 lines', upgrade: 'POST /v1/scan - full 40 rules, $0.015 USDC' }));
 
