@@ -29,7 +29,6 @@ app.use('*', async (c, next) => {
 function sha256(t) { return createHash('sha256').update(t).digest('hex'); }
 
 import { generateJwt } from '@coinbase/cdp-sdk/auth';
-
 const facilitatorClient = new HTTPFacilitatorClient({
   url: 'https://api.cdp.coinbase.com/platform/v2/x402',
   createAuthHeaders: async () => {
@@ -96,6 +95,7 @@ app.use(
       },
     },
     server,
+    { syncFacilitatorOnStart: false },
   ),
 );
 
@@ -186,7 +186,7 @@ app.get('/v1/scan', (c) => {
     error: 'Payment required',
     resource: { url: 'https://agenttrust.uk/v1/scan', description: 'Scan any OpenClaw SKILL.md for malware, prompt injection, exfiltration, and 37 other threat patterns. Returns risk score 0-100 and detailed findings.', mimeType: 'application/json' },
     accepts: [{ scheme: 'exact', network: NETWORK, amount: '15000', asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', payTo: WALLET, maxTimeoutSeconds: 300, extra: { name: 'USD Coin', version: '2' } }],
-    extensions: { bazaar: { discoverable: true, category: 'security', tags: ['security','scanner','ai-agents','openclaw','x402'] } },
+    extensions: { bazaar: { discoverable: true } },
     outputSchema: {
       input: { method: 'POST', bodyType: 'json', body: { content: '# My Skill' }, schema: { type: 'object', properties: { content: { type: 'string', description: 'Full SKILL.md content to scan' } }, required: ['content'] } },
       output: { ok: true, score: 0, level: 'SAFE', findings: [], hash: 'sha256_of_content' }
