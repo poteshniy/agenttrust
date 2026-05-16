@@ -216,10 +216,38 @@ app.get('/v1/scan', (c) => {
     error: 'Payment required',
     resource: { url: 'https://agenttrust.uk/v1/scan', description: 'Scan any OpenClaw SKILL.md for malware, prompt injection, exfiltration, and 37 other threat patterns. Returns risk score 0-100 and detailed findings.', mimeType: 'application/json' },
     accepts: [{ scheme: 'exact', network: NETWORK, amount: '15000', asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', payTo: WALLET, maxTimeoutSeconds: 300, extra: { name: 'USD Coin', version: '2' } }],
-    extensions: { bazaar: { discoverable: true } },
-    outputSchema: {
-      input: { method: 'POST', bodyType: 'json', body: { content: '# My Skill' }, schema: { type: 'object', properties: { content: { type: 'string', description: 'Full SKILL.md content to scan' } }, required: ['content'] } },
-      output: { ok: true, score: 0, level: 'SAFE', findings: [], hash: 'sha256_of_content' }
+    extensions: {
+      bazaar: {
+        info: {
+          input: {
+            type: 'http',
+            method: 'POST',
+            bodyType: 'json',
+            body: { content: '# My Skill\n## Description\nSkill content here' }
+          },
+          output: {
+            type: 'json',
+            example: { ok: true, score: 0, level: 'SAFE', findings: [], hash: 'sha256_of_content' }
+          }
+        },
+        schema: {
+          '$schema': 'https://json-schema.org/draft/2020-12/schema',
+          type: 'object',
+          properties: {
+            input: {
+              type: 'object',
+              properties: {
+                type: { const: 'http', type: 'string' },
+                method: { const: 'POST', type: 'string' },
+                bodyType: { const: 'json', type: 'string' },
+                body: { type: 'object', properties: { content: { type: 'string' } }, required: ['content'] }
+              },
+              required: ['type', 'method', 'bodyType', 'body']
+            }
+          },
+          required: ['input']
+        }
+      }
     }
   };
   c.status(402);
