@@ -62,7 +62,37 @@ app.use(
         description: 'Scan any OpenClaw SKILL.md for malware, prompt injection, exfiltration, and 37 other threat patterns. Returns risk score 0-100 and detailed findings.',
         mimeType: 'application/json',
         extensions: {
-          bazaar: { discoverable: true, category: 'security', tags: ['security', 'scanner', 'ai-agents', 'openclaw', 'x402'] }
+          bazaar: {
+            info: {
+              input: {
+                type: 'http',
+                method: 'POST',
+                bodyType: 'json',
+                body: { content: '# My Skill\n## Description\nSkill content here' }
+              },
+              output: {
+                type: 'json',
+                example: { ok: true, score: 0, level: 'SAFE', findings: [], hash: 'sha256_of_content' }
+              }
+            },
+            schema: {
+              '$schema': 'https://json-schema.org/draft/2020-12/schema',
+              type: 'object',
+              properties: {
+                input: {
+                  type: 'object',
+                  properties: {
+                    type: { const: 'http', type: 'string' },
+                    method: { const: 'POST', type: 'string' },
+                    bodyType: { const: 'json', type: 'string' },
+                    body: { type: 'object', properties: { content: { type: 'string' } }, required: ['content'] }
+                  },
+                  required: ['type', 'method', 'bodyType', 'body']
+                }
+              },
+              required: ['input']
+            }
+          }
         },
         outputSchema: {
           input: {
