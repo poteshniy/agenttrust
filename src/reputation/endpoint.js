@@ -130,7 +130,19 @@ export async function checkEndpointReputation(url) {
   }
 
   score = Math.max(0, score);
-  return buildResult(url, score, issues, { x402Version, hasResource, hasBazaar, hasInfo, hasSchema, payTo, network, amount });
+
+  // On-chain bonus
+  let onChain = null;
+  if (payTo) {
+    onChain = await getOnChainStats(payTo);
+    if (onChain?.indexed) {
+      score = Math.min(100, score + 5); // bonus for being indexed
+      if (onChain.calls_30d > 10) score = Math.min(100, score + 5);
+      if (onChain.payer_count_30d > 1) score = Math.min(100, score + 5);
+    }
+  }
+
+  return buildResult(url, score, issues, { x402Version, hasResource, hasBazaar, hasInfo, hasSchema, payTo, network, amount, onChain });
 }
 
 function buildResult(url, score, issues, meta) {
@@ -144,11 +156,34 @@ function buildResult(url, score, issues, meta) {
   `);
   stmt.run(url, urlHash, score, badge, meta.x402Version || null, meta.hasBazaar ? 1 : 0, meta.hasResource ? 1 : 0, meta.hasInfo ? 1 : 0, meta.hasSchema ? 1 : 0, meta.payTo || null, meta.network || null, meta.amount || null, JSON.stringify(issues));
 
-  return { url, score, badge, issues, ...meta, checked_at: new Date().toISOString() };
+  const { onChain, ...rest } = meta;
+  return { url, score, badge, issues, ...rest, on_chain: onChain || null, checked_at: new Date().toISOString() };
 }
 
 export function getEndpointHistory(url) {
   const urlHash = createHash('sha256').update(url).digest('hex');
   return db.prepare('SELECT * FROM endpoint_checks WHERE url_hash = ? ORDER BY created_at DESC LIMIT 10').all(urlHash)
     .map(r => ({ ...r, issues: JSON.parse(r.issues) }));
+}
+
+export async function getOnChainStats(payTo) {
+  if (!payTo) return null;
+  try {
+    const url = `https://api.cdp.coinbase.com/platform/v2/x402/discovery/merchant?payTo=${payTo}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const resources = data.resources || [];
+    if (resources.length === 0) return null;
+    const r = resources[0];
+    return {
+      indexed: true,
+      last_updated: r.lastUpdated,
+      payer_count_30d: r.quality?.l30DaysUniquePayers || 0,
+      calls_30d: r.quality?.l30DaysTotalCalls || 0,
+      last_called: r.quality?.lastCalledAt || null,
+    };
+  } catch {
+    return null;
+  }
 }
