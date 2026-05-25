@@ -9,6 +9,7 @@ import { scan } from './scanner/engine.js';
 import { freeScan } from './free_scan.js';
 import { getReputation } from './reputation/oracle.js';
 import { checkEndpointReputation, getEndpointHistory } from './reputation/endpoint.js';
+import { generateBadge } from './reputation/badge.js';
 
 const app = new Hono();
 const PORT = process.env.PORT || 3402;
@@ -141,6 +142,23 @@ app.use(async (c, next) => {
     c.req.raw = new Request(url.toString(), c.req.raw);
   }
   await next();
+});
+
+app.get('/v1/badge', async (c) => {
+  const url = c.req.query('url');
+  if (!url) return c.text('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="28"><rect width="120" height="28" rx="4" fill="#1a1a1a" stroke="#333"/><text x="10" y="18" font-family="monospace" font-size="10" fill="#666">url required</text></svg>', 400, { 'Content-Type': 'image/svg+xml' });
+  const history = getEndpointHistory(url);
+  let badge, score;
+  if (history.length > 0 && Math.floor(Date.now()/1000) - history[0].created_at < 3600) {
+    badge = history[0].badge;
+    score = history[0].score;
+  } else {
+    const result = await checkEndpointReputation(url);
+    badge = result.badge;
+    score = result.score;
+  }
+  const svg = generateBadge(badge, score, url);
+  return c.text(svg, 200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=3600' });
 });
 
 app.post('/v1/reputation', async (c) => {
