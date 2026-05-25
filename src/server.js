@@ -8,6 +8,7 @@ import { HTTPFacilitatorClient } from '@x402/core/server';
 import { scan } from './scanner/engine.js';
 import { freeScan } from './free_scan.js';
 import { getReputation } from './reputation/oracle.js';
+import { checkEndpointReputation, getEndpointHistory } from './reputation/endpoint.js';
 
 const app = new Hono();
 const PORT = process.env.PORT || 3402;
@@ -140,6 +141,26 @@ app.use(async (c, next) => {
     c.req.raw = new Request(url.toString(), c.req.raw);
   }
   await next();
+});
+
+app.post('/v1/reputation', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const url = body.url || '';
+  if (!url || !url.startsWith('https://')) return c.json({ error: 'valid https url required' }, 400);
+  const result = await checkEndpointReputation(url);
+  return c.json({ ok: true, ...result, charged: '0.010', currency: 'USDC' });
+});
+
+app.get('/v1/reputation', async (c) => {
+  const url = c.req.query('url');
+  if (!url) return c.json({ error: 'url query param required' }, 400);
+  const history = getEndpointHistory(url);
+  if (history.length === 0) {
+    const result = await checkEndpointReputation(url);
+    return c.json({ ok: true, ...result, charged: '0.010', currency: 'USDC' });
+  }
+  const latest = history[0];
+  return c.json({ ok: true, ...latest, issues: latest.issues, history_count: history.length, charged: '0.010', currency: 'USDC' });
 });
 
 app.get('/health', (c) => c.json({
