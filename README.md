@@ -56,3 +56,15 @@ Live at: https://agenttrust.uk
 ## License
 
 MIT
+
+## API Endpoints
+
+| Endpoint | Price | Description |
+|---|---|---|
+| `POST /v1/scan` | $0.015 USDC | Full scan, 40 rules |
+| `POST /v1/scan/free` | FREE | Quick scan, 5 rules, max 50 lines |
+| `GET /v1/reputation` | FREE | x402 endpoint reputation check |
+| `GET /v1/badge` | FREE | SVG trust badge for embedding |
+| `GET /v1/trust/:address` | $0.010 USDC | Agent wallet reputation lookup |
+| `POST /v1/verify` | $0.005 USDC | Verify skill hash integrity |
+| `POST /v1/report` | $0.050 USDC | Full audit report |
