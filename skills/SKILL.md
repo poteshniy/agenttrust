@@ -2,10 +2,13 @@
 
 ## Description
 
-Security Scanner and Reputation Oracle for AI Agent Skills.
-Analyzes OpenClaw SKILL.md files for security risks before installation.
-Checks for threat patterns across 12 categories.
-Now includes x402 endpoint reputation checking and trust badges.
+Security Scanner and Reputation Oracle for AI Agent Skills. Unlike prompt-based scanners, AgentTrust is a real API with 40 threat rules across 12 categories — backed by x402 payments on Base mainnet.
+
+Unique features:
+- Integrity hash — verify a skill hasn't changed since last scan
+- Endpoint reputation — check any x402 API before your agent pays
+- On-chain stats — real CDP Bazaar data on calls and payers
+- Trust badge — SVG badge for x402 providers to embed on their sites
 
 **Privacy notice:** Submitted skill content is sent to agenttrust.uk for analysis.
 Only submit content you are comfortable sharing with this service.
