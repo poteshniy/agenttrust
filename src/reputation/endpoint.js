@@ -18,6 +18,7 @@ db.exec(`
     network TEXT,
     amount TEXT,
     issues TEXT,
+    on_chain TEXT,
     created_at INTEGER DEFAULT (unixepoch())
   );
   CREATE INDEX IF NOT EXISTS idx_endpoint_url ON endpoint_checks(url_hash);
@@ -151,10 +152,10 @@ function buildResult(url, score, issues, meta) {
 
   // Save to DB
   const stmt = db.prepare(`
-    INSERT INTO endpoint_checks (url, url_hash, score, badge, x402_version, has_bazaar, has_resource, has_info, has_schema, pay_to, network, amount, issues)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO endpoint_checks (url, url_hash, score, badge, x402_version, has_bazaar, has_resource, has_info, has_schema, pay_to, network, amount, issues, on_chain)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  stmt.run(url, urlHash, score, badge, meta.x402Version || null, meta.hasBazaar ? 1 : 0, meta.hasResource ? 1 : 0, meta.hasInfo ? 1 : 0, meta.hasSchema ? 1 : 0, meta.payTo || null, meta.network || null, meta.amount || null, JSON.stringify(issues));
+  stmt.run(url, urlHash, score, badge, meta.x402Version || null, meta.hasBazaar ? 1 : 0, meta.hasResource ? 1 : 0, meta.hasInfo ? 1 : 0, meta.hasSchema ? 1 : 0, meta.payTo || null, meta.network || null, meta.amount || null, JSON.stringify(issues), meta.onChain ? JSON.stringify(meta.onChain) : null);
 
   const { onChain, ...rest } = meta;
   return { url, score, badge, issues, ...rest, on_chain: onChain || null, checked_at: new Date().toISOString() };
@@ -163,7 +164,7 @@ function buildResult(url, score, issues, meta) {
 export function getEndpointHistory(url) {
   const urlHash = createHash('sha256').update(url).digest('hex');
   return db.prepare('SELECT * FROM endpoint_checks WHERE url_hash = ? ORDER BY created_at DESC LIMIT 10').all(urlHash)
-    .map(r => ({ ...r, issues: JSON.parse(r.issues) }));
+    .map(r => ({ ...r, issues: JSON.parse(r.issues || '[]'), on_chain: r.on_chain ? JSON.parse(r.on_chain) : null }));
 }
 
 export async function getOnChainStats(payTo) {

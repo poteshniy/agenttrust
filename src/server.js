@@ -171,14 +171,17 @@ app.post('/v1/reputation', async (c) => {
 
 app.get('/v1/reputation', async (c) => {
   const url = c.req.query('url');
+  const refresh = c.req.query('refresh');
   if (!url) return c.json({ error: 'url query param required' }, 400);
   const history = getEndpointHistory(url);
-  if (history.length === 0) {
-    const result = await checkEndpointReputation(url);
-    return c.json({ ok: true, ...result, charged: '0.010', currency: 'USDC' });
+  if (history.length > 0 && !refresh) {
+    const age = Math.floor(Date.now() / 1000) - history[0].created_at;
+    if (age < 3600) {
+      return c.json({ ok: true, ...history[0], history_count: history.length, cached: true, charged: '0.010', currency: 'USDC' });
+    }
   }
-  const latest = history[0];
-  return c.json({ ok: true, ...latest, issues: latest.issues, history_count: history.length, charged: '0.010', currency: 'USDC' });
+  const result = await checkEndpointReputation(url);
+  return c.json({ ok: true, ...result, history_count: (history.length + 1), charged: '0.010', currency: 'USDC' });
 });
 
 app.get('/health', (c) => c.json({
