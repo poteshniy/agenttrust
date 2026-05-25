@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { createHash } from 'crypto';
+import { saveScan, getScan, checkRateLimit } from './db.js';
 import { paymentMiddleware, x402ResourceServer } from '@x402/hono';
 import { ExactEvmScheme } from '@x402/evm/exact/server';
 import { HTTPFacilitatorClient } from '@x402/core/server';
@@ -63,6 +64,8 @@ app.use(
         mimeType: 'application/json',
         extensions: {
           bazaar: {
+            name: 'AgentTrust Security Scanner',
+            description: 'Scan OpenClaw SKILL.md files for malware, prompt injection, data exfiltration, and 37 other threat patterns before installing.',
             info: {
               input: {
                 type: 'http',
@@ -162,9 +165,16 @@ app.post('/v1/scan', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const content = body.content || body.skill || '';
   if (!content) return c.json({ error: 'content field required' }, 400);
-  const result = scan(content);
   const hash = sha256(content);
+  // Check cache
+  const cached = getScan(hash);
+  if (cached) {
+    return c.json({ ok: true, score: cached.score, level: cached.level, findings: cached.findings, hash, charged: '0.015', currency: 'USDC', cached: true, scanned_at: new Date(cached.created_at * 1000).toISOString() });
+  }
+  const result = scan(content);
   hashRegistry.set(hash, { hash, level: result.level, score: result.score, registered_at: new Date().toISOString() });
+  // Save to DB
+  saveScan({ hash, score: result.score, level: result.level, findings: result.findings, content_size: content.length });
   return c.json({ ok: true, ...result, hash, charged: '0.015', currency: 'USDC', scanned_at: new Date().toISOString() });
 });
 
@@ -188,9 +198,9 @@ app.post('/v1/verify', async (c) => {
   const expected = body.hash || '';
   if (!content && !expected) return c.json({ error: 'content or hash required' }, 400);
   const hash = content ? sha256(content) : expected;
-  const record = hashRegistry.get(hash);
+  const record = getScan(hash) || hashRegistry.get(hash);
   if (!record) return c.json({ ok: true, verified: false, hash, message: 'Hash not found. Skill has not been scanned by AgentTrust.', charged: '0.005', currency: 'USDC' });
-  return c.json({ ok: true, verified: true, hash, level: record.level, score: record.score, registered_at: record.registered_at, charged: '0.005', currency: 'USDC' });
+  return c.json({ ok: true, verified: true, hash, level: record.level, score: record.score, registered_at: record.registered_at || new Date(record.created_at * 1000).toISOString(), charged: '0.005', currency: 'USDC' });
 });
 
 app.post('/v1/report', async (c) => {
@@ -218,6 +228,8 @@ app.get('/v1/scan', (c) => {
     accepts: [{ scheme: 'exact', network: NETWORK, amount: '15000', asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', payTo: WALLET, maxTimeoutSeconds: 300, extra: { name: 'USD Coin', version: '2' } }],
     extensions: {
       bazaar: {
+        name: 'AgentTrust Security Scanner',
+        description: 'Scan OpenClaw SKILL.md files for malware, prompt injection, data exfiltration, and 37 other threat patterns before installing.',
         info: {
           input: {
             type: 'http',
@@ -258,6 +270,9 @@ app.get('/v1/scan', (c) => {
 app.get('/v1/scan/free', (c) => c.json({ info: 'POST /v1/scan/free - free 5-rule scan, max 50 lines', upgrade: 'POST /v1/scan - full 40 rules, $0.015 USDC' }));
 
 app.post('/v1/scan/free', async (c) => {
+  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown';
+  const rl = checkRateLimit('free:' + ip, 10, 3600);
+  if (!rl.allowed) return c.json({ error: 'Rate limit exceeded. Max 10 free scans per hour.', retry_after: 3600 }, 429);
   const body = await c.req.json().catch(() => ({}));
   const content = body.content || body.skill || '';
   if (!content) return c.json({ error: 'content field required' }, 400);
