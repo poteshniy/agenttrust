@@ -1,3 +1,4 @@
+import '/opt/agenttrust/src/cdp_tap.js';
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { createHash } from 'crypto';
