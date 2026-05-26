@@ -47,6 +47,14 @@ Live at: https://agenttrust.uk
 - [ ] v0.9 — Provider dashboard, paid listings, trust-gated middleware API
 - [ ] v1.0 — First paying providers, reputation infrastructure for x402 ecosystem
 
+## ERC-8257 Registry
+
+AgentTrust is registered as Tool #5 on the [ERC-8257 Agent Tool Registry](https://8257.ai) on Base mainnet.
+
+- Tool ID: 5
+- Registry: [0x265BB2DBFC0A8165C9A1941Eb1372F349baD2cf1](https://basescan.org/address/0x265BB2DBFC0A8165C9A1941Eb1372F349baD2cf1)
+- TX: [0xc39794a4719c4a05d1909f8735fc2571d5f083e02a60ef840193cdd90d3b805a](https://basescan.org/tx/0xc39794a4719c4a05d1909f8735fc2571d5f083e02a60ef840193cdd90d3b805a)
+
 ## Resources
 
 - Article: https://dev.to/poteshniy/i-built-a-security-scanner-for-ai-agent-skills-paid-per-scan-via-x402-no-api-keys-published-ai-4hi3
