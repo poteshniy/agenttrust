@@ -43,7 +43,7 @@ Live at: https://agenttrust.uk
 - [x] v0.5 — Twitter launch, web landing page
 - [x] v0.6 — SQLite persistence, rate limiting, on-chain tx verification
 - [x] v0.7 — `GET /v1/reputation/{endpoint}` — trust score for any x402 endpoint, AgentTrust Badge
-- [ ] v0.8 — ERC-8004 on-chain reputation registry on Base
+- [x] v0.8 — ERC-8257 Agent Tool Registry (Tool #5 on Base mainnet)
 - [ ] v0.9 — Provider dashboard, paid listings, trust-gated middleware API
 - [ ] v1.0 — First paying providers, reputation infrastructure for x402 ecosystem
 
