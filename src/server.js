@@ -10,6 +10,8 @@ import { scan } from './scanner/engine.js';
 import { freeScan } from './free_scan.js';
 import { getReputation } from './reputation/oracle.js';
 import { checkEndpointReputation, getEndpointHistory } from './reputation/endpoint.js';
+import { generateNonce, verifySiwe, verifySession, deleteSession } from './auth/siwe.js';
+import { getDashboardData } from './auth/dashboard.js';
 import { generateBadge } from './reputation/badge.js';
 
 const app = new Hono();
@@ -143,6 +145,43 @@ app.use(async (c, next) => {
     c.req.raw = new Request(url.toString(), c.req.raw);
   }
   await next();
+});
+
+// Dashboard endpoint
+app.get('/v1/dashboard', async (c) => {
+  const token = c.req.header('authorization')?.replace('Bearer ', '');
+  const session = verifySession(token);
+  if (!session) return c.json({ error: 'unauthorized — connect wallet first' }, 401);
+  const data = await getDashboardData(session.address);
+  return c.json({ ok: true, ...data });
+});
+
+// Auth endpoints
+app.get('/v1/auth/nonce', (c) => {
+  const nonce = generateNonce();
+  return c.json({ nonce });
+});
+
+app.post('/v1/auth/verify', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const { message, signature } = body;
+  if (!message || !signature) return c.json({ error: 'message and signature required' }, 400);
+  const result = await verifySiwe(message, signature);
+  if (result.error) return c.json({ error: result.error }, 401);
+  return c.json({ ok: true, token: result.token, address: result.address });
+});
+
+app.post('/v1/auth/logout', (c) => {
+  const token = c.req.header('authorization')?.replace('Bearer ', '');
+  if (token) deleteSession(token);
+  return c.json({ ok: true });
+});
+
+app.get('/v1/auth/me', (c) => {
+  const token = c.req.header('authorization')?.replace('Bearer ', '');
+  const session = verifySession(token);
+  if (!session) return c.json({ error: 'unauthorized' }, 401);
+  return c.json({ ok: true, address: session.address });
 });
 
 app.get('/v1/badge', async (c) => {
