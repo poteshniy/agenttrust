@@ -35,6 +35,16 @@ async function main() {
   console.log('  Level:', result.level);
   console.log('  Hash:', result.hash);
   console.log('');
+  // Check EXTENSION-RESPONSES
+  for (const [k, v] of response.headers.entries()) {
+    if (k.toLowerCase().includes('extension')) {
+      console.log('  Extension header:', k);
+      try {
+        const decoded = JSON.parse(Buffer.from(v, 'base64').toString());
+        console.log('  Decoded:', JSON.stringify(decoded));
+      } catch { console.log('  Value:', v); }
+    }
+  }
 }
 
 main().catch(e => { console.error('Error:', e.message); process.exit(1); });

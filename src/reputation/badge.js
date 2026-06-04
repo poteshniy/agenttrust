@@ -1,23 +1,37 @@
 const COLORS = {
-  TRUSTED: { bg: '#0a1a0a', border: '#4ade80', text: '#4ade80', dot: '#4ade80' },
-  UNVERIFIED: { bg: '#1a1a0a', border: '#facc15', text: '#facc15', dot: '#facc15' },
-  SUSPICIOUS: { bg: '#1a0a0a', border: '#f87171', text: '#f87171', dot: '#f87171' },
+  TRUSTED:    { accent: '#2BE8A0', bg_left: '#081a10', bg_right: '#0A0F11', border: '#2BE8A0' },
+  UNVERIFIED: { accent: '#FFC24B', bg_left: '#1a140a', bg_right: '#0A0F11', border: '#FFC24B' },
+  SUSPICIOUS: { accent: '#FF5C57', bg_left: '#1a0a0a', bg_right: '#0A0F11', border: '#FF5C57' },
 };
 
 export function generateBadge(badge, score, url) {
   const c = COLORS[badge] || COLORS.UNVERIFIED;
-  const label = badge === 'TRUSTED' ? '✓ Trusted' : badge === 'SUSPICIOUS' ? '⚠ Suspicious' : '? Unverified';
+  const label = badge === 'TRUSTED' ? 'TRUSTED' : badge === 'SUSPICIOUS' ? 'SUSPICIOUS' : 'UNVERIFIED';
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="260" height="28" viewBox="0 0 260 28">
+  // Two-panel layout: 280×56
+  // Left panel (0–124): dot + AGENT TRUST
+  // Right panel (125–280): label + score
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="280" height="56" viewBox="0 0 280 56">
   <title>AgentTrust: ${badge} (${score}/100)</title>
   <a href="https://agenttrust.uk" target="_blank">
-    <rect width="260" height="28" rx="4" fill="${c.bg}" stroke="${c.border}" stroke-width="1"/>
-    <circle cx="12" cy="14" r="4" fill="${c.dot}"/>
-    <text x="22" y="18" font-family="monospace" font-size="11" fill="${c.text}" font-weight="bold">${label}</text>
-    <text x="110" y="18" font-family="monospace" font-size="10" fill="#444444">|</text>
-    <text x="120" y="18" font-family="monospace" font-size="11" fill="#cccccc" font-weight="bold">${score}/100</text>
-    <text x="170" y="18" font-family="monospace" font-size="10" fill="#444444">|</text>
-    <text x="180" y="18" font-family="monospace" font-size="11" fill="${c.text}" font-weight="bold" opacity="0.6">AgentTrust</text>
+    <!-- outer border -->
+    <rect width="280" height="56" rx="5" fill="${c.bg_right}" stroke="${c.border}" stroke-width="1"/>
+    <!-- left panel -->
+    <rect x="1" y="1" width="123" height="54" rx="4" fill="${c.bg_left}"/>
+    <!-- divider -->
+    <rect x="124" y="8" width="1" height="40" fill="${c.accent}" opacity="0.35"/>
+    <!-- colored dot -->
+    <rect x="13" y="24" width="8" height="8" fill="${c.accent}"/>
+    <!-- AGENT text -->
+    <text x="27" y="33" font-family="monospace" font-size="11" fill="#E9EFEC" font-weight="700" letter-spacing="1">AGENT</text>
+    <!-- TRUST text in accent color -->
+    <text x="73" y="33" font-family="monospace" font-size="11" fill="${c.accent}" font-weight="700" letter-spacing="1">TRUST</text>
+    <!-- label (small caps) -->
+    <text x="140" y="22" font-family="monospace" font-size="8.5" fill="${c.accent}" font-weight="700" letter-spacing="2.5">${label}</text>
+    <!-- score (large) -->
+    <text x="140" y="45" font-family="monospace" font-size="20" fill="${c.accent}" font-weight="800">${score}</text>
+    <!-- /100 -->
+    <text x="${score >= 100 ? 177 : score >= 10 ? 165 : 153}" y="45" font-family="monospace" font-size="11" fill="#4a5a54">/100</text>
   </a>
 </svg>`;
 }
