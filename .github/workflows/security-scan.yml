@@ -1,0 +1,17 @@
+name: AgentTrust Security Scan
+on: [push, pull_request]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: AgentTrust Security Scan
+        uses: poteshniy/agenttrust-scan-action@v1
+        with:
+          path: '.'
+          fail_on: 'CRITICAL'
+          scan_skills: 'true'
+          scan_mcp: 'true'
+          scan_source: 'false'
