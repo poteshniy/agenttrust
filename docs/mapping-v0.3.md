@@ -1,12 +1,12 @@
 # AgentTrust Mapping Document
 # ID: agenttrust-v0.3-2026-06-07
-# Conforming implementation of draft-krausz-verification-state-00
+# Conforming implementation of draft-krausz-verification-state-01
 
 ## Overview
 
 This document specifies how AgentTrust derives `v_recommendation` and `v_gate`
 from scan primitives, per the `verification.*` constraint family
-(draft-krausz-verification-state-00).
+(draft-krausz-verification-state-01).
 
 This mapping is **immutable after publication**. Future rule changes ship under
 a new mapping ID.
@@ -80,7 +80,7 @@ or verdict = refuted → `halt`.
 - Live endpoint: `POST https://agenttrust.uk/v1/scan`
 - MCP endpoint: `POST https://agenttrust.uk/v1/scan/mcp`
 - GitHub: https://github.com/poteshniy/agenttrust
-- Spec reference: draft-krausz-verification-state-00
+- Spec reference: draft-krausz-verification-state-01
   https://datatracker.ietf.org/doc/draft-krausz-verification-state/
 
 ## Changelog

@@ -84,7 +84,7 @@ export function signScanResult(scanResult, inputHash, scanType = 'skill_scan') {
   const header = {
     alg: 'EdDSA',
     kid: KID,
-    typ: 'application/vnd.agenttrust.receipt+jws',
+    typ: 'application/vnd.verification.v0.3+jws',
     cty: 'application/json',
   };
 
