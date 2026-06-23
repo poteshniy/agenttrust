@@ -405,6 +405,96 @@ app.get('/.well-known/agenttrust-mapping', (c) =>
   c.redirect('https://raw.githubusercontent.com/poteshniy/agenttrust/main/docs/mapping-v0.3.md', 301)
 );
 
+
+
+// ─── Composed Receipt (POST /v1/compose) ─────────────────────────────────────
+app.post('/v1/compose', async (c) => {
+  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown';
+  const rl = checkRateLimit('compose:' + ip, 20, 3600);
+  if (!rl.allowed) return c.json({ error: 'Rate limit exceeded' }, 429);
+  const body = await c.req.json().catch(() => ({}));
+  const { handleCompose } = await import('./compose.js');
+  const result = await handleCompose(body);
+  if (result.error) return c.json(result, 400);
+  return c.json(result);
+});
+
+// ─── Unified Trust Gate ───────────────────────────────────────────────────────
+app.post('/v1/gate', async (c) => {
+  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown';
+  const rl = checkRateLimit('gate:' + ip, 10, 3600);
+  if (!rl.allowed) return c.json({ error: 'Rate limit exceeded. Max 10/hour.' }, 429);
+
+  const body = await c.req.json().catch(() => ({}));
+  const { skill, mcp, endpoint } = body;
+  if (!skill && !mcp && !endpoint) {
+    return c.json({ error: 'at least one of: skill, mcp, endpoint required' }, 400);
+  }
+
+  const results = {};
+  const allFindings = [];
+  let worstLevel = 'SAFE';
+  const levelRank = { SAFE: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
+
+  // Scan SKILL.md
+  if (skill) {
+    const r = freeScan(String(skill).slice(0, 4000));
+    results.skill = { score: r.score, level: r.level, findings: r.findings, crits: r.crits };
+    allFindings.push(...r.findings.map(f => ({ ...f, source: 'skill' })));
+    if (levelRank[r.level] > levelRank[worstLevel]) worstLevel = r.level;
+  }
+
+  // Scan MCP manifest
+  if (mcp && typeof mcp === 'object') {
+    const r = scanMCP(mcp, false);
+    results.mcp = { score: r.score, level: r.level, findings: r.findings, crits: r.crits };
+    allFindings.push(...(r.findings || []).map(f => ({ ...f, source: 'mcp' })));
+    if (levelRank[r.level] > levelRank[worstLevel]) worstLevel = r.level;
+  }
+
+  // Check endpoint reputation
+  if (endpoint && typeof endpoint === 'string' && endpoint.startsWith('https://')) {
+    try {
+      const history = getEndpointHistory(endpoint);
+      let rep;
+      if (history.length > 0 && Math.floor(Date.now()/1000) - history[0].created_at < 3600) {
+        rep = history[0];
+      } else {
+        rep = await checkEndpointReputation(endpoint);
+      }
+      results.endpoint = { score: rep.score, badge: rep.badge, issues: rep.issues || [] };
+      if (rep.badge === 'SUSPICIOUS') {
+        if (levelRank['CRITICAL'] > levelRank[worstLevel]) worstLevel = 'CRITICAL';
+      } else if (rep.badge === 'UNVERIFIED') {
+        if (levelRank['MEDIUM'] > levelRank[worstLevel]) worstLevel = 'MEDIUM';
+      }
+    } catch(e) {
+      results.endpoint = { error: 'Could not check endpoint reputation' };
+    }
+  }
+
+  const gate = worstLevel === 'SAFE' ? 'act' : 'halt';
+  const recommendation = worstLevel === 'SAFE' ? 'confident_supported' :
+    worstLevel === 'CRITICAL' ? 'refuted' : 'weak_supported';
+
+  // Sign unified receipt
+  const gateResult = { score: 0, level: worstLevel, crits: allFindings.filter(f=>f.sev>=90).length, findings: allFindings };
+  const claimHash = hashInput(JSON.stringify({ skill: skill?.slice(0,100), mcp: mcp?.name, endpoint }));
+  const receipt = signScanResult(gateResult, claimHash, 'unified_gate');
+
+  return c.json({
+    ok: true,
+    v_gate: gate,
+    v_recommendation: recommendation,
+    v_gate_mapping: MAPPING_ID,
+    worst_level: worstLevel,
+    results,
+    findings_total: allFindings.length,
+    ...(receipt ? { receipt } : {}),
+    checked_at: new Date().toISOString(),
+  });
+});
+
 // ─── Health / Info ────────────────────────────────────────────────────────────
 app.get('/health', (c) => c.json({
   status: 'ok', service: 'AgentTrust', version: '0.9.0',
@@ -428,6 +518,7 @@ app.get('/', (c) => c.json({
     'GET  /v1/trust/:addr':   '$0.010 USDC — wallet reputation',
     'POST /v1/verify':        '$0.005 USDC — verify scan hash',
     'POST /v1/report':        '$0.050 USDC — full audit report',
+    'POST /v1/gate':          'free — unified ACT/HALT gate (skill + MCP + endpoint)',
   },
   jws: { mapping_id: MAPPING_ID, spec: 'draft-krausz-verification-state-00', jwks: 'https://agenttrust.uk/.well-known/jwks.json' },
   payment: { address: WALLET, network: 'base', currency: 'USDC' },
