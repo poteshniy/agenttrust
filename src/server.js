@@ -15,6 +15,8 @@ import { generateNonce, verifySiwe, verifySession, deleteSession } from './auth/
 import { getDashboardData } from './auth/dashboard.js';
 import { generateBadge } from './reputation/badge.js';
 import { signScanResult, hashInput, getJWKS, MAPPING_ID, getMappingHash } from './jws.js';
+import { BUILDER_CODE, declareBuilderCodeExtension } from '@x402/extensions/builder-code';
+const BC_EXT = { [BUILDER_CODE]: declareBuilderCodeExtension('bc_6sh5sk4l') };
 
 const app = new Hono();
 const PORT = process.env.PORT || 3402;
@@ -70,6 +72,7 @@ app.use(
         description: 'Scan any OpenClaw SKILL.md for malware, prompt injection, exfiltration, and 37 other threat patterns. Returns risk score 0-100 and detailed findings.',
         mimeType: 'application/json',
         extensions: {
+          ...BC_EXT,
           bazaar: {
             name: 'AgentTrust Security Scanner',
             description: 'Scan OpenClaw SKILL.md files for malware, prompt injection, data exfiltration, and 37 other threat patterns before installing.',
@@ -110,6 +113,7 @@ app.use(
         description: 'Scan MCP server manifest for security threats: tool poisoning, shadowing, hidden unicode injection, credential harvesting, and 37 other patterns.',
         mimeType: 'application/json',
         extensions: {
+          ...BC_EXT,
           bazaar: {
             name: 'AgentTrust MCP Scanner',
             description: 'Scan MCP server manifests for tool poisoning, prompt injection, hidden unicode, credential harvesting, and rug pull patterns before connecting.',
@@ -122,16 +126,19 @@ app.use(
       },
       'GET /v1/trust': {
         accepts: [{ scheme: 'exact', price: '$0.010', network: NETWORK, payTo: WALLET }],
+        extensions: { ...BC_EXT },
         description: 'Agent reputation lookup by wallet address. Returns trust score, incidents, audits.',
         mimeType: 'application/json',
       },
       'POST /v1/verify': {
         accepts: [{ scheme: 'exact', price: '$0.005', network: NETWORK, payTo: WALLET }],
+        extensions: { ...BC_EXT },
         description: 'Verify a skill has been previously scanned by AgentTrust. Returns cached result by SHA256 hash.',
         mimeType: 'application/json',
       },
       'POST /v1/report': {
         accepts: [{ scheme: 'exact', price: '$0.050', network: NETWORK, payTo: WALLET }],
+        extensions: { ...BC_EXT },
         description: 'Full security audit report with per-finding recommendations and remediation steps.',
         mimeType: 'application/json',
       },
