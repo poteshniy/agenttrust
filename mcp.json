@@ -1,0 +1,12 @@
+{
+  "name": "agenttrust",
+  "version": "1.0.0",
+  "description": "Security scanner for AI agent skills and MCP servers",
+  "command": "node",
+  "args": ["src/mcp-server.js"],
+  "tools": [
+    "scan_skill_free", "scan_skill", "scan_mcp_free", "scan_mcp",
+    "trust_gate", "check_reputation", "verify_hash", 
+    "full_report", "wallet_reputation", "get_badge_url"
+  ]
+}
