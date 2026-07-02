@@ -372,6 +372,20 @@ app.get('/v1/trust/:address', (c) => {
   return c.json({ ok: true, ...rep });
 });
 
+// ─── GET handlers for 402index discovery ─────────────────────────────────────
+app.get('/v1/verify', (c) => {
+  const payload = { x402Version: 2, error: 'Payment required', resource: { url: 'https://agenttrust.uk/v1/verify', mimeType: 'application/json' }, accepts: [{ scheme: 'exact', network: NETWORK, amount: '5000', asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', payTo: WALLET, maxTimeoutSeconds: 300, extra: { name: 'USD Coin', version: '2' } }] };
+  c.status(402);
+  c.header('payment-required', Buffer.from(JSON.stringify(payload)).toString('base64'));
+  return c.json(payload);
+});
+app.get('/v1/report', (c) => {
+  const payload = { x402Version: 2, error: 'Payment required', resource: { url: 'https://agenttrust.uk/v1/report', mimeType: 'application/json' }, accepts: [{ scheme: 'exact', network: NETWORK, amount: '50000', asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', payTo: WALLET, maxTimeoutSeconds: 300, extra: { name: 'USD Coin', version: '2' } }] };
+  c.status(402);
+  c.header('payment-required', Buffer.from(JSON.stringify(payload)).toString('base64'));
+  return c.json(payload);
+});
+
 // ─── Verify ───────────────────────────────────────────────────────────────────
 app.post('/v1/verify', async (c) => {
   const body = await c.req.json().catch(() => ({}));
@@ -413,6 +427,45 @@ app.get('/.well-known/agenttrust-mapping', (c) =>
 );
 
 
+
+
+// ─── Sign canonical bytes (POST /v1/sign) ────────────────────────────────────
+// Used by AgentOracle for composed receipt (Option B coordination)
+app.post('/v1/sign', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const { canonical_bytes_b64u } = body;
+  if (!canonical_bytes_b64u) return c.json({ error: 'canonical_bytes_b64u required' }, 400);
+
+  const privKeyPem = process.env.AGENTTRUST_PRIVATE_KEY;
+  if (!privKeyPem) return c.json({ error: 'signing key not configured' }, 500);
+
+  try {
+    const { sign: cryptoSign } = await import('crypto');
+    const { b64url } = await import('./jws.js').catch(() => ({
+      b64url: (s) => Buffer.from(s, 'utf8').toString('base64url')
+    }));
+
+    const KID = 'agenttrust-ed25519-v1';
+    const TYP = 'application/vnd.verification.v0.3+composed+jws';
+    const header = { alg: 'EdDSA', kid: KID, typ: TYP };
+    const protectedB64 = Buffer.from(JSON.stringify(header), 'utf8').toString('base64url');
+
+    // Sign: protected_b64u + "." + canonical_bytes_b64u
+    const sigInput = Buffer.from(`${protectedB64}.${canonical_bytes_b64u}`);
+    const { sign } = await import('crypto');
+    const sigBuf = sign(null, sigInput, privKeyPem);
+
+    return c.json({
+      ok: true,
+      signature: sigBuf.toString('base64url'),
+      protected: protectedB64,
+      kid: KID,
+    });
+  } catch (err) {
+    console.error('[sign] error:', err.message);
+    return c.json({ error: err.message }, 500);
+  }
+});
 
 // ─── Composed Receipt (POST /v1/compose) ─────────────────────────────────────
 app.post('/v1/compose', async (c) => {
