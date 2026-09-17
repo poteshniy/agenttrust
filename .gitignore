@@ -2,3 +2,7 @@ node_modules/
 .env
 x402pay.js
 ecosystem.config.cjs
+.keys/
+data/
+conformance-build/
+*.bak

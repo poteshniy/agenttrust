@@ -1,21 +1,23 @@
 # AgentTrust
 ## Description
-Security Scanner and Reputation Oracle for AI agent skills and MCP servers. Scans for malware, prompt injection, tool poisoning, and 47 other threat patterns. Returns cryptographically signed ACT/HALT receipts (JWS, draft-krausz-verification-state-00). x402-native on Base mainnet.
+Security Scanner and Reputation Oracle for AI agent skills and MCP servers. Scans for malware, prompt injection, tool poisoning, and 47 other threat patterns. Returns cryptographically signed ACT/HALT receipts (JWS, draft-krausz-verification-state-01). x402-native on Base mainnet. Conforming implementation of IETF draft-krausz-verification-state-01 alongside AgentOracle.
 
 Unique features:
 - SKILL.md scanner — 40 rules, 12 categories
 - MCP manifest scanner — tool poisoning, shadowing, hidden unicode, rug pull detection
 - Unified trust gate — skill + MCP + endpoint reputation in one signed call
-- JWS-signed receipts — verifiable ACT/HALT per IETF draft-krausz-verification-state-00
+- Composed receipt — two-issuer JWS envelope (AgentTrust + AgentOracle, Phase 1 live)
+- JWS-signed receipts — verifiable ACT/HALT per IETF draft-krausz-verification-state-01
 - Endpoint reputation — on-chain trust score before your agent pays
 - Trust badge — SVG badge for x402 providers
+- MCP server — install via npx @poteshniy/agenttrust-mcp@1.0.1 (pinned) for Claude Desktop, Cursor, Windsurf
 
-**Privacy notice:** Submitted content is sent to agenttrust.uk for analysis. Only submit content you are comfortable sharing.
+**Privacy notice:** Submitted content is transmitted to the external host agenttrust.uk for analysis. This applies to ALL endpoints including free ones. The agent MUST obtain explicit per-request user consent before any submission and MUST exclude secrets (credentials, keys, tokens, internal URLs) by default. Submitting content is an opt-in action, not a default.
 
 **Payment notice:** Full scan endpoints require x402 USDC payments on Base. Free tiers require no wallet.
 
 ## Instructions
-Always try free endpoints first. Before using any paid endpoint, ask the user for explicit confirmation and disclose the exact price.
+Before sending ANY content to agenttrust.uk — free or paid — ask the user for explicit confirmation and show that the submitted content will leave the local machine and go to the host agenttrust.uk. Do NOT submit content containing credentials, API keys, authorization headers, private keys, tokens, or internal URLs; redact them first or skip submission. Prefer local summarization when content is sensitive. Free endpoints require no wallet; paid endpoints additionally require x402 confirmation with the exact price disclosed.
 
 ### Free SKILL.md scan (no payment required)
 POST https://agenttrust.uk/v1/scan/free
@@ -52,6 +54,19 @@ Note: All fields optional — include whichever you want to check.
 Returns: v_gate (act/halt), v_recommendation, worst_level, per-component results, JWS receipt
 Use this to check everything at once before your agent acts.
 
+### Composed receipt (FREE)
+POST https://agenttrust.uk/v1/compose
+Price: FREE
+Body: { "claim_hash": "sha256-...", "skill": "<content>", "mcp": <manifest> }
+Returns: two-issuer JWS envelope (AgentTrust + AgentOracle), composed_decision (act/halt)
+Note: Phase 1 live — two signers. Phase 2 adds Presidio as third signer.
+
+### Sign canonical bytes (FREE)
+POST https://agenttrust.uk/v1/sign
+Price: FREE
+Body: { "canonical_bytes_b64u": "<base64url encoded bytes>" }
+Returns: AT signature + protected header for composed JWS assembly
+
 ### Endpoint reputation check (FREE)
 GET https://agenttrust.uk/v1/reputation?url=<endpoint_url>
 Price: FREE
@@ -78,6 +93,15 @@ POST https://agenttrust.uk/v1/report
 Price: 0.050 USDC on Base (x402)
 Body: { "content": "<skill content>", "skill_id": "<name>" }
 Returns: full report with per-finding remediation guidance
+
+### MCP Server (Claude Desktop / Cursor / Windsurf)
+Install once and use all tools directly in your AI client:
+npx @poteshniy/agenttrust-mcp@1.0.1
+
+Config:
+{"mcpServers":{"agenttrust":{"command":"npx","args":["@poteshniy/agenttrust-mcp@1.0.1"]}}}
+
+The package version is pinned intentionally. Verify the package (version, publisher, integrity) before changing the pin. Do not add `-y` — package acquisition should not be silently approved.
 
 ### JWS Receipt Verification
 All scan responses include a signed receipt field. Verify with:
