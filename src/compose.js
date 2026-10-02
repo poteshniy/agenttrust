@@ -98,7 +98,7 @@ export function buildComposedPayload({ claim_hash, skill_hash, v_gate, scanResul
     envelope_kind: 'verification.v0.3+composed',
     receipt_version: '0.3.0-composed',
     signature_meta: {
-      agentoracle_jwks_url: 'https://agentoracle.co/.well-known/jwks.json',
+      agentoracle_jwks_url: 'https://tanilo.io/.well-known/jwks.json',
       agenttrust_jwks_url: 'https://agenttrust.uk/.well-known/jwks.json',
     },
     subject: {
