@@ -2,7 +2,7 @@ import '/opt/agenttrust/src/cdp_tap.js';
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { createHash } from 'crypto';
-import { saveScan, getScan, checkRateLimit } from './db.js';
+import { saveScan, getScan, checkRateLimit, savePayment } from './db.js';
 import { paymentMiddleware, x402ResourceServer } from '@x402/hono';
 import { ExactEvmScheme } from '@x402/evm/exact/server';
 import { HTTPFacilitatorClient } from '@x402/core/server';
@@ -63,6 +63,23 @@ const facilitatorClient = new HTTPFacilitatorClient({
 
 const server = new x402ResourceServer(facilitatorClient)
   .register(NETWORK, new ExactEvmScheme());
+
+// ─── Payment ledger: record every settled x402 payment ───────────────────────
+app.use(async (c, next) => {
+  await next();
+  try {
+    const h = c.res.headers.get('PAYMENT-RESPONSE') || c.res.headers.get('X-PAYMENT-RESPONSE');
+    if (!h) return;
+    const s = JSON.parse(Buffer.from(h, 'base64').toString('utf8'));
+    if (s.success === false) return;
+    savePayment({
+      route: c.req.method + ' ' + new URL(c.req.url).pathname,
+      tx_hash: s.transaction || null,
+      payer: s.payer || null,
+      network: s.network || null,
+    });
+  } catch (e) { console.error('[payment-ledger]', e.message); }
+});
 
 app.use(
   paymentMiddleware(

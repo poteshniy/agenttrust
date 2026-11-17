@@ -63,3 +63,17 @@ export function checkRateLimit(key, limit, windowSecs) {
 }
 
 export default db;
+
+// Payment ledger: one row per settled x402 payment
+db.exec(`CREATE TABLE IF NOT EXISTS payments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts INTEGER DEFAULT (unixepoch()),
+  route TEXT,
+  tx_hash TEXT,
+  payer TEXT,
+  network TEXT
+)`);
+export function savePayment({ route, tx_hash, payer, network }) {
+  db.prepare('INSERT INTO payments (route, tx_hash, payer, network) VALUES (?, ?, ?, ?)')
+    .run(route, tx_hash, payer, network);
+}
